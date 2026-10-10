@@ -9,6 +9,7 @@ distro==1.9.0
 Django==6.1.2
 django-cors-headers==4.9.0
 djangorestframework==3.18.3
+djangorestframework_simplejwt==5.5.1
 filelock==4.1.0
 fsspec==2026.9.0
 google-auth==2.61.0
@@ -31,6 +32,7 @@ pyasn1_modules==0.4.2
 pycparser==3.11
 pydantic==2.14.0
 pydantic_core==2.50.0
+PyJWT==2.15.1
 python-dotenv==1.2.4
 regex==2026.9.29
 requests==2.34.2

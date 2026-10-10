@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/6.1/ref/settings/
 import os
 from dotenv import load_dotenv
 
+from datetime import timedelta
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -42,6 +43,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 
     'rest_framework',
+    'rest_framework_simplejwt',
+    'rest_framework_simplejwt.token_blacklist',
     'corsheaders',
     'auth_app',
     'quizzes_app',
@@ -134,9 +137,34 @@ STATIC_URL = 'static/'
 # are rejected with 415 Unsupported Media Type.
 
 REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'auth_app.api.authentication.CookieJWTAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
     'DEFAULT_PARSER_CLASSES': ['rest_framework.parsers.JSONParser'],
     'TEST_REQUEST_DEFAULT_FORMAT': 'json',
 }
+
+
+# JWT authentication via HttpOnly cookies
+# The frontend never reads the tokens; the browser sends them as cookies.
+# AUTH_COOKIE_SECURE must be True in production (HTTPS only).
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
+    'ROTATE_REFRESH_TOKENS': False,
+    'UPDATE_LAST_LOGIN': True,
+}
+
+AUTH_COOKIE_ACCESS = 'access_token'
+AUTH_COOKIE_REFRESH = 'refresh_token'
+AUTH_COOKIE_SAMESITE = 'Lax'
+AUTH_COOKIE_SECURE = (
+    os.environ.get('AUTH_COOKIE_SECURE', 'False').lower() == 'true'
+)
 
 
 # Frontend origins (CORS and trusted origins)

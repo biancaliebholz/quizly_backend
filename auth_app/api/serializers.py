@@ -2,8 +2,11 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 User = get_user_model()
+
+INVALID_CREDENTIALS_MESSAGE = 'Invalid username or password.'
 
 
 class RegistrationSerializer(serializers.ModelSerializer):
@@ -50,3 +53,19 @@ class RegistrationSerializer(serializers.ModelSerializer):
         """Create the user with a hashed password."""
         validated_data.pop('confirmed_password')
         return User.objects.create_user(**validated_data)
+
+
+class UserSummarySerializer(serializers.ModelSerializer):
+    """Public user data returned after login."""
+
+    class Meta:
+        model = User
+        fields = ['id', 'username', 'email']
+
+
+class LoginSerializer(TokenObtainPairSerializer):
+    """Issue a JWT pair; failures use one generic message (no enumeration)."""
+
+    default_error_messages = {
+        'no_active_account': INVALID_CREDENTIALS_MESSAGE,
+    }
