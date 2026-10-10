@@ -2,11 +2,14 @@ from datetime import timedelta
 
 from django.contrib.auth import get_user_model
 from django.test import TestCase, override_settings
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.test import APIRequestFactory
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import AccessToken
+
+from auth_app.models import BlockedAccessToken
 
 User = get_user_model()
 
@@ -58,6 +61,15 @@ class CookieJWTAuthenticationTests(TestCase):
     def test_expired_token_returns_401(self):
         token = AccessToken.for_user(self.user)
         token.set_exp(lifetime=-timedelta(seconds=1))
+        response = self.call('get', str(token))
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_blocked_token_returns_401(self):
+        token = AccessToken.for_user(self.user)
+        expires_at = timezone.now() + timedelta(minutes=15)
+        BlockedAccessToken.objects.create(
+            jti=token['jti'], expires_at=expires_at
+        )
         response = self.call('get', str(token))
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
