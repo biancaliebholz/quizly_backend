@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 
     'rest_framework',
+    'corsheaders',
     'auth_app',
     'quizzes_app',
 ]
@@ -50,6 +51,7 @@ AUTH_USER_MODEL = 'auth_app.User'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -98,6 +100,7 @@ AUTH_PASSWORD_VALIDATORS = [
     },
     {
         'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+        'OPTIONS': {'min_length': 6},
     },
     {
         'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
@@ -124,6 +127,32 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.1/howto/static-files/
 
 STATIC_URL = 'static/'
+
+
+# Django REST framework
+# The API accepts JSON only; HTML form submissions (a classic CSRF vector)
+# are rejected with 415 Unsupported Media Type.
+
+REST_FRAMEWORK = {
+    'DEFAULT_PARSER_CLASSES': ['rest_framework.parsers.JSONParser'],
+    'TEST_REQUEST_DEFAULT_FORMAT': 'json',
+}
+
+
+# Frontend origins (CORS and trusted origins)
+# Comma-separated list in FRONTEND_ORIGINS; the school frontend runs on
+# Live Server at http://127.0.0.1:5500 by default.
+
+FRONTEND_ORIGINS = [
+    origin.strip()
+    for origin in os.environ.get(
+        'FRONTEND_ORIGINS', 'http://127.0.0.1:5500'
+    ).split(',')
+    if origin.strip()
+]
+CORS_ALLOWED_ORIGINS = FRONTEND_ORIGINS
+CORS_ALLOW_CREDENTIALS = True
+CSRF_TRUSTED_ORIGINS = FRONTEND_ORIGINS
 
 
 # Email
