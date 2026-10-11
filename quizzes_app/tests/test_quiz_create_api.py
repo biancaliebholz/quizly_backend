@@ -10,6 +10,7 @@ from rest_framework_simplejwt.tokens import AccessToken
 from quizzes_app.models import Question, Quiz
 from quizzes_app.services.exceptions import (
     QuizGenerationError,
+    TranscriptTooShortError,
     VideoTooLongError,
 )
 
@@ -146,6 +147,15 @@ class QuizCreateSuccessTests(QuizCreateTestCase):
         response = self.post_url()
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.data, {'url': [message]})
+        self.assertFalse(Quiz.objects.exists())
+
+    def test_too_short_transcript_returns_400_without_gemini(self):
+        message = 'The video does not contain enough speech to create a quiz.'
+        self.transcribe.side_effect = TranscriptTooShortError(message)
+        response = self.post_url()
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.data, {'url': [message]})
+        self.generate.assert_not_called()
         self.assertFalse(Quiz.objects.exists())
 
     def test_unauthenticated_request_returns_401(self):

@@ -39,6 +39,7 @@ def normalize_youtube_url(url):
 
 
 def extract_youtube_video_id(url):
+    """Return the 11-character video id of a YouTube URL or None."""
     parts = urlsplit(url.strip())
     if parts.scheme not in ('http', 'https'):
         return None

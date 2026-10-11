@@ -21,6 +21,7 @@ def validate_question_options(options, answer):
 
 
 def has_valid_options(options):
+    """True for a list of four distinct, non-empty strings."""
     if not isinstance(options, list) or len(options) != OPTION_COUNT:
         return False
     texts = {

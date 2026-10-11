@@ -11,10 +11,12 @@ https://docs.djangoproject.com/en/6.1/ref/settings/
 """
 
 import os
-from dotenv import load_dotenv
-
 from datetime import timedelta
 from pathlib import Path
+
+from dotenv import load_dotenv
+
+from .env import env_bool, env_list
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -27,9 +29,10 @@ load_dotenv(BASE_DIR / '.env')
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.environ['DJANGO_SECRET_KEY']
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# Safe default: False. Local development sets DJANGO_DEBUG=True in .env.
+DEBUG = env_bool('DJANGO_DEBUG', False)
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = env_list('DJANGO_ALLOWED_HOSTS', '127.0.0.1,localhost')
 
 
 # Application definition
@@ -97,20 +100,17 @@ DATABASES = {
 # Password validation
 # https://docs.djangoproject.com/en/6.1/ref/settings/#auth-password-validators
 
+# Minimum length 6 matches the password rule of the school frontend.
+
+PASSWORD_VALIDATION = 'django.contrib.auth.password_validation'
 AUTH_PASSWORD_VALIDATORS = [
+    {'NAME': f'{PASSWORD_VALIDATION}.UserAttributeSimilarityValidator'},
     {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+        'NAME': f'{PASSWORD_VALIDATION}.MinimumLengthValidator',
         'OPTIONS': {'min_length': 6},
     },
-    {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
-    },
+    {'NAME': f'{PASSWORD_VALIDATION}.CommonPasswordValidator'},
+    {'NAME': f'{PASSWORD_VALIDATION}.NumericPasswordValidator'},
 ]
 
 
@@ -162,22 +162,18 @@ SIMPLE_JWT = {
 AUTH_COOKIE_ACCESS = 'access_token'
 AUTH_COOKIE_REFRESH = 'refresh_token'
 AUTH_COOKIE_SAMESITE = 'Lax'
-AUTH_COOKIE_SECURE = (
-    os.environ.get('AUTH_COOKIE_SECURE', 'False').lower() == 'true'
-)
+AUTH_COOKIE_SECURE = env_bool('AUTH_COOKIE_SECURE', False)
+
+# The admin uses Django's session and CSRF cookies; secure them likewise.
+SESSION_COOKIE_SECURE = AUTH_COOKIE_SECURE
+CSRF_COOKIE_SECURE = AUTH_COOKIE_SECURE
 
 
 # Frontend origins (CORS and trusted origins)
 # Comma-separated list in FRONTEND_ORIGINS; the school frontend runs on
 # Live Server at http://127.0.0.1:5500 by default.
 
-FRONTEND_ORIGINS = [
-    origin.strip()
-    for origin in os.environ.get(
-        'FRONTEND_ORIGINS', 'http://127.0.0.1:5500'
-    ).split(',')
-    if origin.strip()
-]
+FRONTEND_ORIGINS = env_list('FRONTEND_ORIGINS', 'http://127.0.0.1:5500')
 CORS_ALLOWED_ORIGINS = FRONTEND_ORIGINS
 CORS_ALLOW_CREDENTIALS = True
 CSRF_TRUSTED_ORIGINS = FRONTEND_ORIGINS
@@ -193,6 +189,22 @@ GEMINI_TIMEOUT_SECONDS = int(os.environ.get('GEMINI_TIMEOUT_SECONDS', '120'))
 WHISPER_MODEL = os.environ.get('WHISPER_MODEL', 'tiny')
 QUIZ_MAX_VIDEO_SECONDS = int(os.environ.get('QUIZ_MAX_VIDEO_SECONDS', '600'))
 YTDLP_JS_RUNTIME = os.environ.get('YTDLP_JS_RUNTIME', 'node')
+
+
+# Logging
+# Quiz generation errors are logged with traceback to the console (only the
+# video URL and the error, never API keys or tokens).
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {'class': 'logging.StreamHandler'},
+    },
+    'loggers': {
+        'quizzes_app': {'handlers': ['console'], 'level': 'INFO'},
+    },
+}
 
 
 # Email

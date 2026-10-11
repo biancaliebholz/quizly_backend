@@ -6,7 +6,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from ..models import Quiz
-from ..services.exceptions import QuizGenerationError, VideoTooLongError
+from ..services.exceptions import InvalidVideoError, QuizGenerationError
 from ..services.quiz_pipeline import create_quiz_from_url
 from .exceptions import QuizGenerationFailed
 from .permissions import IsQuizOwner
@@ -29,10 +29,12 @@ class QuizListCreateView(generics.ListCreateAPIView):
     serializer_class = QuizSerializer
 
     def get_queryset(self):
+        """Only own quizzes; questions are loaded with one extra query."""
         own_quizzes = Quiz.objects.filter(owner=self.request.user)
         return own_quizzes.prefetch_related('questions')
 
     def create(self, request, *args, **kwargs):
+        """Validate the URL and generate the quiz (201, or 400 / 500)."""
         input_serializer = QuizCreateSerializer(data=request.data)
         input_serializer.is_valid(raise_exception=True)
         quiz = self.generate_quiz(input_serializer.validated_data['url'])
@@ -43,7 +45,7 @@ class QuizListCreateView(generics.ListCreateAPIView):
         """Run the pipeline and translate service errors into 400 / 500."""
         try:
             return create_quiz_from_url(self.request.user, video_url)
-        except VideoTooLongError as error:
+        except InvalidVideoError as error:
             raise ValidationError({'url': [str(error)]}) from error
         except QuizGenerationError as error:
             logger.exception('Quiz generation failed for %s', video_url)

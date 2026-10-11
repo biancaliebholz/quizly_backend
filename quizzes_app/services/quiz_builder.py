@@ -31,6 +31,7 @@ def build_quiz_object(owner, video_url, payload):
 
 
 def get_questions_data(payload):
+    """Return exactly ten question dicts or raise QuizGenerationError."""
     questions = payload.get('questions') if isinstance(payload, dict) else None
     if not isinstance(questions, list) or len(questions) != QUESTION_COUNT:
         raise QuizGenerationError(
@@ -54,6 +55,7 @@ def build_question(data):
 
 
 def validate_models(quiz, questions):
+    """Apply the model rules (full_clean) and map errors for the API."""
     try:
         quiz.full_clean()
         for question in questions:

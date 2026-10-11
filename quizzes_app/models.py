@@ -45,4 +45,5 @@ class Question(models.Model):
         return self.question_title
 
     def clean(self):
+        """Validate options and answer with the shared rule (also in admin)."""
         validate_question_options(self.question_options, self.answer)

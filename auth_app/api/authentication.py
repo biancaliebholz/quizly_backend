@@ -17,6 +17,7 @@ class CookieJWTAuthentication(JWTAuthentication):
     """
 
     def authenticate(self, request):
+        """Return (user, token) or None; 401 bad token, 403 bad origin."""
         raw_token = request.COOKIES.get(settings.AUTH_COOKIE_ACCESS)
         if not raw_token:
             return None

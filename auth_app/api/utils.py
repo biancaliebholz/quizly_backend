@@ -17,6 +17,7 @@ def get_url_origin(url):
 
 
 def has_origin_headers(request):
+    """True if the request carries an Origin or Referer header."""
     return 'HTTP_ORIGIN' in request.META or 'HTTP_REFERER' in request.META
 
 
@@ -30,6 +31,7 @@ def get_request_origin(request):
 
 
 def is_trusted_origin(request):
+    """True if Origin (or the Referer origin) is a trusted frontend."""
     return get_request_origin(request) in settings.CSRF_TRUSTED_ORIGINS
 
 
@@ -62,6 +64,7 @@ def set_access_cookie(response, access):
 
 
 def set_token_cookies(response, access, refresh):
+    """Set the access and refresh JWT as HttpOnly cookies."""
     set_access_cookie(response, access)
     set_auth_cookie(
         response, settings.AUTH_COOKIE_REFRESH, refresh,
@@ -70,6 +73,7 @@ def set_token_cookies(response, access, refresh):
 
 
 def delete_token_cookies(response):
+    """Expire both JWT cookies (same path and SameSite as when set)."""
     for name in (settings.AUTH_COOKIE_ACCESS, settings.AUTH_COOKIE_REFRESH):
         response.delete_cookie(
             name, path='/', samesite=settings.AUTH_COOKIE_SAMESITE
@@ -100,5 +104,6 @@ def block_access_token(token):
 
 
 def is_access_token_blocked(token):
+    """True if a logout revoked this access token (blocked jti)."""
     jti = token[api_settings.JTI_CLAIM]
     return BlockedAccessToken.objects.filter(jti=jti).exists()

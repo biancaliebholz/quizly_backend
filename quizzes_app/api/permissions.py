@@ -7,4 +7,5 @@ class IsQuizOwner(BasePermission):
     message = 'You do not have permission to access this quiz.'
 
     def has_object_permission(self, request, view, obj):
+        """Allow access only to the owner of the quiz."""
         return obj.owner_id == request.user.id

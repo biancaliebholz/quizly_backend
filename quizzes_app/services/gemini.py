@@ -90,6 +90,7 @@ def request_quiz_json(transcript):
 
 
 def build_client():
+    """Create a Gemini client with timeout; fail early without API key."""
     if not settings.GEMINI_API_KEY:
         raise QuizGenerationError('GEMINI_API_KEY is not configured.')
     timeout_ms = settings.GEMINI_TIMEOUT_SECONDS * 1000

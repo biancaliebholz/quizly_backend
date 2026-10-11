@@ -68,6 +68,7 @@ class LoginView(TokenObtainPairView):
     authentication_classes = []
 
     def post(self, request, *args, **kwargs):
+        """Log in: 403 for an untrusted origin, 401 for any invalid input."""
         if has_origin_headers(request):
             enforce_trusted_origin(request)
         serializer = self.get_serializer(data=request.data)
@@ -76,6 +77,7 @@ class LoginView(TokenObtainPairView):
         return self.build_login_response(serializer)
 
     def build_login_response(self, serializer):
+        """Return the documented body; the tokens go into cookies only."""
         user_data = UserSummarySerializer(serializer.user).data
         body = {'detail': 'Login successfully!', 'user': user_data}
         response = Response(body)
@@ -95,6 +97,7 @@ class TokenRefreshCookieView(TokenRefreshView):
     authentication_classes = []
 
     def post(self, request, *args, **kwargs):
+        """403 for an untrusted origin, 401 for a missing or invalid cookie."""
         enforce_trusted_origin(request)
         raw_token = request.COOKIES.get(settings.AUTH_COOKIE_REFRESH)
         if not raw_token:
@@ -126,6 +129,7 @@ class LogoutView(APIView):
     """
 
     def post(self, request):
+        """Revoke both tokens (blacklist + jti block) and clear the cookies."""
         blacklist_refresh_cookie(request)
         block_access_token(request.auth)
         response = Response({'detail': LOGOUT_MESSAGE})
@@ -133,6 +137,7 @@ class LogoutView(APIView):
         return response
 
     def handle_exception(self, exc):
+        """Keep 401, but still log out a trusted frontend with an old token."""
         response = super().handle_exception(exc)
         unauthorized = response.status_code == status.HTTP_401_UNAUTHORIZED
         if unauthorized and is_trusted_origin(self.request):

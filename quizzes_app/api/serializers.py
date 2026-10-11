@@ -56,6 +56,7 @@ class QuizCreateSerializer(serializers.Serializer):
     url = serializers.CharField(max_length=2048)
 
     def validate_url(self, value):
+        """Return the normalized watch?v= URL or raise a 400 error."""
         video_url = normalize_youtube_url(value)
         if video_url is None:
             raise serializers.ValidationError(INVALID_URL_MESSAGE)

@@ -30,6 +30,7 @@ def download_audio(video_url, target_dir):
 
 
 def build_download_options(target_dir):
+    """yt-dlp options: best audio as mp3 in target_dir, no playlists."""
     return {
         'format': 'bestaudio/best',
         'outtmpl': str(Path(target_dir) / f'{AUDIO_BASENAME}.%(ext)s'),
@@ -54,6 +55,7 @@ def ensure_allowed_duration(info):
 
 
 def find_audio_file(target_dir):
+    """Return the mp3 path or raise QuizGenerationError if it is missing."""
     audio_path = Path(target_dir) / f'{AUDIO_BASENAME}.{AUDIO_CODEC}'
     if not audio_path.is_file():
         raise QuizGenerationError('No audio file was produced.')
