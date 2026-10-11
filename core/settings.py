@@ -183,6 +183,18 @@ CORS_ALLOW_CREDENTIALS = True
 CSRF_TRUSTED_ORIGINS = FRONTEND_ORIGINS
 
 
+# Quiz generation: YouTube audio (yt-dlp/FFmpeg) -> Whisper -> Gemini
+# QUIZ_MAX_VIDEO_SECONDS protects the CPU from long Whisper runs; it is an
+# additional restriction not documented in the school API contract.
+
+GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', '')
+GEMINI_MODEL = os.environ.get('GEMINI_MODEL', 'gemini-3.5-flash-lite')
+GEMINI_TIMEOUT_SECONDS = int(os.environ.get('GEMINI_TIMEOUT_SECONDS', '120'))
+WHISPER_MODEL = os.environ.get('WHISPER_MODEL', 'tiny')
+QUIZ_MAX_VIDEO_SECONDS = int(os.environ.get('QUIZ_MAX_VIDEO_SECONDS', '600'))
+YTDLP_JS_RUNTIME = os.environ.get('YTDLP_JS_RUNTIME', 'node')
+
+
 # Email
 # https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration
 

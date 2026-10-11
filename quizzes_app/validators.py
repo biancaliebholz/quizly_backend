@@ -1,6 +1,7 @@
 from django.core.exceptions import ValidationError
 
 OPTION_COUNT = 4
+QUESTION_COUNT = 10
 OPTIONS_ERROR = (
     f'Provide exactly {OPTION_COUNT} distinct, non-empty text options.'
 )
