@@ -64,21 +64,21 @@ cd quizly_backend
 
 Python 3.12 is required.
 
+**macOS / Linux:**
+
 ```bash
 python3.12 -m venv venv
-```
-
-Activate it on macOS or Linux:
-
-```bash
 source venv/bin/activate
 ```
 
-Activate it on Windows:
+**Windows (PowerShell):**
 
-```bash
-venv\Scripts\activate
+```powershell
+py -3.12 -m venv venv
+.\venv\Scripts\Activate.ps1
 ```
+
+On Windows Command Prompt (CMD), activate with `venv\Scripts\activate.bat` instead.
 
 ### 3. Install the dependencies
 
@@ -92,11 +92,21 @@ python -m pip install -r requirements.txt
 
 Create the local environment file:
 
+**macOS / Linux:**
+
 ```bash
 cp .env.example .env
 ```
 
-Generate a Django secret key:
+**Windows (PowerShell):**
+
+```powershell
+Copy-Item .env.example .env
+```
+
+On Windows CMD, use `copy .env.example .env`.
+
+Generate a Django secret key (all systems):
 
 ```bash
 python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
@@ -234,4 +244,5 @@ Each application separates API logic, business logic and tests according to its 
 - The frontend is maintained separately and is not included in this repository.
 - SQLite is used for local development. Production deployment requires additional security configuration.
 - The local database, virtual environment and `.env` file are excluded from version control.
+- The project was tested on macOS; Windows setup instructions are provided but have not been independently tested.
 - This project was created for educational purposes.
