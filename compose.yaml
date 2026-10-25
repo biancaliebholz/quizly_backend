@@ -1,0 +1,55 @@
+# Quizly backend for production: one container behind the host Nginx.
+# The host Nginx serves the frontend and ./staticfiles and proxies /api/
+# and /admin/ to 127.0.0.1:8010. Secrets stay in the external .env file.
+# Resource values are defaults; override them in .env after checking the
+# VPS (nproc, free -h, docker stats).
+
+name: quizly
+
+services:
+  backend:
+    build: .
+    image: quizly-backend
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DJANGO_SQLITE_PATH: /app/data/db.sqlite3
+      GUNICORN_WORKERS: ${GUNICORN_WORKERS:-1}
+      GUNICORN_THREADS: ${GUNICORN_THREADS:-4}
+      GUNICORN_TIMEOUT: ${GUNICORN_TIMEOUT:-600}
+      # torch would otherwise start one thread per host CPU core.
+      OMP_NUM_THREADS: ${OMP_NUM_THREADS:-2}
+    ports:
+      - "127.0.0.1:8010:8000"
+    volumes:
+      - db:/app/data
+      - cache:/app/.cache
+      - ./staticfiles:/app/staticfiles
+    # Temporary audio lives in RAM and is gone after every restart.
+    tmpfs:
+      - /tmp:size=256m
+    # Service-level limits are applied by plain `docker compose up`.
+    cpus: ${QUIZLY_CPUS:-2}
+    mem_limit: ${QUIZLY_MEMORY_LIMIT:-2g}
+    memswap_limit: ${QUIZLY_MEMORY_LIMIT:-2g}
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - import socket; socket.create_connection(('127.0.0.1', 8000), 3)
+      interval: 30s
+      timeout: 5s
+      start_period: 30s
+      retries: 3
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+
+volumes:
+  db:
+  cache:

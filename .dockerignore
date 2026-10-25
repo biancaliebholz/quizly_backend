@@ -1,0 +1,26 @@
+# Secrets and local data never enter the image
+.env
+.env.*
+db.sqlite3*
+data/
+staticfiles/
+
+# Local environments, caches and tooling
+.git
+.gitignore
+venv/
+.venv/
+__pycache__/
+*.pyc
+.coverage
+htmlcov/
+.pytest_cache/
+.DS_Store
+.claude/
+CLAUDE.md
+*.zip
+
+# Docker files themselves
+Dockerfile
+compose.yaml
+.dockerignore

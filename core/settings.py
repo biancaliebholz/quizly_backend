@@ -88,11 +88,16 @@ WSGI_APPLICATION = 'core.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/6.1/ref/settings/#databases
+# DJANGO_SQLITE_PATH moves the SQLite file onto a persistent Docker volume.
+# IMMEDIATE transactions and a 20 s busy timeout prevent "database is
+# locked" errors when several Gunicorn threads write at the same time.
 
+SQLITE_PATH = os.environ.get('DJANGO_SQLITE_PATH') or BASE_DIR / 'db.sqlite3'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'NAME': SQLITE_PATH,
+        'OPTIONS': {'transaction_mode': 'IMMEDIATE', 'timeout': 20},
     }
 }
 
@@ -130,6 +135,15 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.1/howto/static-files/
 
 STATIC_URL = 'static/'
+# collectstatic target; in production the host Nginx serves it at /static/.
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+
+# Reverse proxy
+# Nginx terminates HTTPS and sets X-Forwarded-Proto. The container is only
+# reachable via 127.0.0.1, so clients cannot send this header directly.
+
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 
 # Django REST framework
@@ -193,16 +207,30 @@ YTDLP_JS_RUNTIME = os.environ.get('YTDLP_JS_RUNTIME', 'node')
 
 # Logging
 # Quiz generation errors are logged with traceback to the console (only the
-# video URL and the error, never API keys or tokens).
+# video URL and the error, never API keys or tokens). With DEBUG=False,
+# django.request reports 500 errors (method, path and traceback, no bodies
+# or cookies) and django.security rejected hosts; 4xx responses stay quiet.
 
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
+    'formatters': {
+        'simple': {
+            'format': '{asctime} {levelname} {name}: {message}',
+            'style': '{',
+        },
+    },
     'handlers': {
-        'console': {'class': 'logging.StreamHandler'},
+        'console': {'class': 'logging.StreamHandler', 'formatter': 'simple'},
     },
     'loggers': {
         'quizzes_app': {'handlers': ['console'], 'level': 'INFO'},
+        'django.request': {
+            'handlers': ['console'], 'level': 'ERROR', 'propagate': False,
+        },
+        'django.security': {
+            'handlers': ['console'], 'level': 'WARNING', 'propagate': False,
+        },
     },
 }
 
