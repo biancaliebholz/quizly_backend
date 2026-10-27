@@ -44,7 +44,9 @@ SUPPORTED_URLS = (
 
 
 @override_settings(
-    CSRF_TRUSTED_ORIGINS=[FRONTEND_ORIGIN], GEMINI_API_KEY='test-key'
+    CSRF_TRUSTED_ORIGINS=[FRONTEND_ORIGIN],
+    GEMINI_API_KEY='test-key',
+    QUIZ_USE_DIRECT_GEMINI_VIDEO=False,
 )
 class QuizCreateTestCase(APITestCase):
     """POST /api/quizzes/ with yt-dlp and Whisper always mocked."""
@@ -69,6 +71,19 @@ class QuizCreateTestCase(APITestCase):
         audio_path = target_dir / 'audio.mp3'
         audio_path.write_bytes(b'audio')
         return audio_path
+
+    def patch_gemini_client(self):
+        """Mock only the SDK client; the real Gemini service still runs."""
+        client_class = self.start_patch(
+            'quizzes_app.services.gemini.genai.Client'
+        )
+        client = client_class.return_value
+        client.__enter__.return_value = client
+        self.generate_content = client.models.generate_content
+
+    def respond_with(self, text):
+        self.generate_content.return_value = Mock(text=text)
+        self.generate_content.side_effect = None
 
     def post_url(self, url=SHARE_URL, origin=FRONTEND_ORIGIN):
         data = {'url': url}
@@ -175,16 +190,7 @@ class QuizCreateGeminiTests(QuizCreateTestCase):
 
     def setUp(self):
         super().setUp()
-        client_class = self.start_patch(
-            'quizzes_app.services.gemini.genai.Client'
-        )
-        client = client_class.return_value
-        client.__enter__.return_value = client
-        self.generate_content = client.models.generate_content
-
-    def respond_with(self, text):
-        self.generate_content.return_value = Mock(text=text)
-        self.generate_content.side_effect = None
+        self.patch_gemini_client()
 
     def test_valid_gemini_json_creates_quiz(self):
         self.respond_with(json.dumps(build_ai_payload()))
@@ -219,3 +225,31 @@ class QuizCreateGeminiTests(QuizCreateTestCase):
             with self.subTest(service=mock):
                 mock.side_effect = QuizGenerationError('external failure')
                 self.assert_generation_failed()
+
+
+@override_settings(QUIZ_USE_DIRECT_GEMINI_VIDEO=True)
+class QuizCreateDirectVideoTests(QuizCreateTestCase):
+    """Direct Gemini video mode: no download, no Whisper, same builder."""
+
+    def setUp(self):
+        super().setUp()
+        self.patch_gemini_client()
+        self.respond_with(json.dumps(build_ai_payload()))
+
+    def test_valid_gemini_json_creates_quiz_without_audio_path(self):
+        response = self.post_url()
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data['video_url'], CANONICAL_URL)
+        self.assertEqual(Question.objects.count(), 10)
+        self.download.assert_not_called()
+        self.transcribe.assert_not_called()
+
+    def test_gemini_receives_normalized_url_as_video_part(self):
+        self.post_url()
+        video_part = self.generate_content.call_args.kwargs['contents'][0]
+        self.assertEqual(video_part.file_data.file_uri, CANONICAL_URL)
+
+    def test_gemini_failure_returns_500(self):
+        self.generate_content.side_effect = api_aborts()[0]
+        self.assert_generation_failed()
+        self.download.assert_not_called()

@@ -31,8 +31,9 @@ The API provides:
 - JWT authentication with HttpOnly cookies
 - Token refresh and secure logout
 - Automatic quiz generation from YouTube videos
-- Audio transcription using OpenAI Whisper
+- Audio transcription using OpenAI Whisper (default mode)
 - AI-generated questions using Google Gemini
+- Optional direct Gemini video mode for deployments where YouTube blocks yt-dlp
 - Quizzes with 10 questions and 4 answer options each
 - Quiz management, including editing and deletion
 - User-specific access permissions
@@ -237,8 +238,11 @@ Each application separates API logic, business logic and tests according to its 
 
 ## Notes
 
-- Quiz generation uses yt-dlp, FFmpeg, Whisper and Gemini.
-- Video duration is limited to 10 minutes by default. Videos with insufficient speech are rejected. These are additional restrictions beyond the provided API contract.
+- Quiz generation has two modes, selected with `QUIZ_USE_DIRECT_GEMINI_VIDEO` in `.env`:
+    - `False` (default): yt-dlp and FFmpeg download the audio, Whisper transcribes it, and Gemini creates the quiz from the transcript.
+    - `True`: Gemini processes the public YouTube URL directly, without a download and without Whisper. Use this for deployments where YouTube blocks yt-dlp. YouTube URL support in the Gemini API is a preview feature, so its pricing and rate limits may change.
+- In both modes, the AI output is validated with the same rules and saved atomically.
+- In the default mode, video duration is limited to 10 minutes and videos with insufficient speech are rejected. These are additional restrictions beyond the provided API contract. The direct Gemini video mode does not check either of them.
 - Whisper runs locally, while Gemini requires an internet connection and API key.
 - Python 3.12 and the pinned dependencies are required for the tested environment.
 - The frontend is maintained separately and is not included in this repository.

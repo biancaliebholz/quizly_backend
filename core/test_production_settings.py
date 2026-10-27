@@ -8,6 +8,7 @@ from django.test import SimpleTestCase
 BASE_DIR = Path(__file__).resolve().parent.parent
 CONTAINER_DB_PATH = '/app/data/db.sqlite3'
 DB_NAME = "s.DATABASES['default']['NAME']"
+DIRECT_VIDEO = 's.QUIZ_USE_DIRECT_GEMINI_VIDEO'
 
 
 class ProductionSettingsTests(SimpleTestCase):
@@ -45,3 +46,18 @@ class ProductionSettingsTests(SimpleTestCase):
     def test_https_is_detected_behind_the_nginx_proxy(self):
         header = self.read_setting('s.SECURE_PROXY_SSL_HEADER')
         self.assertEqual(header, "('HTTP_X_FORWARDED_PROTO', 'https')")
+
+    def test_direct_gemini_video_is_off_unless_enabled(self):
+        """An empty value wins over .env, so this also holds on the VPS."""
+        for value in ('', 'False'):
+            with self.subTest(value=value):
+                mode = self.read_setting(
+                    DIRECT_VIDEO, QUIZ_USE_DIRECT_GEMINI_VIDEO=value
+                )
+                self.assertEqual(mode, 'False')
+
+    def test_direct_gemini_video_can_be_enabled(self):
+        mode = self.read_setting(
+            DIRECT_VIDEO, QUIZ_USE_DIRECT_GEMINI_VIDEO='True'
+        )
+        self.assertEqual(mode, 'True')
